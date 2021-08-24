@@ -1,0 +1,64 @@
+
+<launch>
+
+    <!-- bag的地址与名称 -->
+    <!-- <arg name="bag_filename" default="/home/touchair/Downloads/data/scan_odom_tf_2021-07-09-09-48-28.bag/scan_odom_tf_2021-07-09-09-48-28.bag"/> -->
+    <!-- <arg name="bag_filename" default="/home/touchair/Downloads/data/scan_odom_2021-08-20-09-17-59.bag"/> -->
+    <arg name="bag_filename" default="/home/touchair/Downloads/data/sensor_data_raw_20210812_03_shiwaizoulang.bag"/>
+
+    <!-- play bagfile -->
+    <node name="playbag" pkg="rosbag" type="play"
+        args="--clock --topics /scan /IMU_data --bags $(arg bag_filename)" />
+
+    <!-- 使用bag的时间戳 -->
+    <param name="use_sim_time" value="true" />
+
+    <!-- base_link to laser_link -->
+    <node pkg="tf" type="static_transform_publisher" name="link_broadcaster" 
+        args="0.1235 0.0 0.240 0 0 0 base_link laser 50" />
+
+    <!-- <node pkg="tf" type="static_transform_publisher" name="link_broadcaster" 
+        args="0.0 0.0 0.256 -3.14 0 0 base_link laser 100" /> -->
+
+    <!-- <node pkg="tf" type="static_transform_publisher" name="link_broadcaster" 
+        args="0.18 0.0 0.256 0 0 0 base_link laser 100" /> -->
+
+    <node pkg="tf" type="static_transform_publisher" name="base_to_imu"
+        args="0 0 0 0 0 0 base_link imu_link 100" />
+
+    <!-- 启动 hector_slam  -->
+    <node pkg="hector_slam_g2o" type="hector_slam_g2o_hector_slam_node" name="hector_slam_g2o_hector_slam_node" output="screen">
+        <param name="pub_map_baselink_tf" value="true"/>
+        <param name="pub_map_odom_tf" value="true"/>
+        <param name="pub_odometry_topic" value="true"/>
+        <param name="tracking_frame" value="base_link"/>
+
+        <param name="scan_topic" value="scan"/>
+        <param name="scan_frame" value="laser"/>
+        <param name="use_max_scan_range" value="40"/>
+        <param name="laser_min_dist" value="0.15"/>
+        <param name="laser_max_dist" value="40"/>
+
+        <param name="map_pub_period" value="3"/>
+        <param name="map_resolution" value="0.05"/>
+        <param name="map_multi_res_levels" value="3"/>
+
+        <param name="map_update_distance_thresh" value="0.4"/>
+        <param name="map_update_angle_thresh" value="0.9"/>
+
+        <param name="use_loop_close" value="false"/>
+        <param name="use_keyframe_constraint" value="true"/>
+        <param name="use_lidar_calibration" value="false"/>
+        <param name="use_graph_optimize" value="true"/>
+        <param name="registration_method" value="GICP"/>
+        <param name="graph_optimize_interval" value="8.0"/>
+
+        <param name="enable_imu_orientation" value="true"/>
+        <param name="enable_imu_acceleration" value="false"/>
+    </node>
+    
+    <!-- launch rviz -->
+    <node name="rviz" pkg="rviz" type="rviz" required="true"
+        args="-d $(find hector_slam_g2o)/config/hector_slam.rviz" />
+
+</launch>
